@@ -1,0 +1,10 @@
+{
+  "name": "@ecommerce/logger",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
+  }
+}

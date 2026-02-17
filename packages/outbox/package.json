@@ -1,0 +1,9 @@
+{
+  "name": "@ecommerce/outbox",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "test": "node --test src/**/*.test.ts"
+  }
+}

@@ -1,0 +1,300 @@
+services:
+  # --- Infrastructure ---
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ecommerce
+      POSTGRES_PASSWORD: ecommerce_pass
+      POSTGRES_DB: ecommerce_catalog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecommerce"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ecommerce
+      RABBITMQ_DEFAULT_PASS: ecommerce_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:14269/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v3.2.0
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/ecommerce.json
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3010:3000"
+    depends_on:
+      - prometheus
+
+  # --- Application services ---
+  catalog:
+    build:
+      context: .
+      dockerfile: services/catalog/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce_pass@postgres:5432/ecommerce_catalog?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      SESSION_SECRET: dev-secret-change-in-production-min-32-chars
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  identity:
+    build:
+      context: .
+      dockerfile: services/identity/Dockerfile
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce_pass@postgres:5432/ecommerce_identity?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      SESSION_SECRET: dev-secret-change-in-production-min-32-chars
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3002/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  basket:
+    build:
+      context: .
+      dockerfile: services/basket/Dockerfile
+    ports:
+      - "3003:3003"
+    environment:
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      SESSION_SECRET: dev-secret-change-in-production-min-32-chars
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3003/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  ordering:
+    build:
+      context: .
+      dockerfile: services/ordering/Dockerfile
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce_pass@postgres:5432/ecommerce_ordering?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      SESSION_SECRET: dev-secret-change-in-production-min-32-chars
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3004/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  payment:
+    build:
+      context: .
+      dockerfile: services/payment/Dockerfile
+    environment:
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      REDIS_URL: redis://redis:6379
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  webhooks:
+    build:
+      context: .
+      dockerfile: services/webhooks/Dockerfile
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: postgres://ecommerce:ecommerce_pass@postgres:5432/ecommerce_webhooks?sslmode=disable
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://ecommerce:ecommerce_pass@rabbitmq:5672
+      SESSION_SECRET: dev-secret-change-in-production-min-32-chars
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3005/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      CATALOG_URL: http://catalog:3001
+      IDENTITY_URL: http://identity:3002
+      BASKET_URL: http://basket:3003
+      ORDERING_URL: http://ordering:3004
+      WEBHOOKS_URL: http://webhooks:3005
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      LOG_LEVEL: info
+      NODE_ENV: development
+    depends_on:
+      catalog:
+        condition: service_healthy
+      identity:
+        condition: service_healthy
+      basket:
+        condition: service_healthy
+      ordering:
+        condition: service_healthy
+      webhooks:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health/live').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    ports:
+      - "5174:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  prometheus_data:
+  grafana_data:

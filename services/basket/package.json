@@ -1,0 +1,23 @@
+{
+  "name": "@ecommerce/basket-service",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --import ./src/instrumentation.ts src/app.ts",
+    "start": "node --import ./src/instrumentation.ts src/app.ts",
+    "test": "node --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@ecommerce/auth": "*",
+    "@ecommerce/observability": "*",
+    "@ecommerce/event-bus": "*",
+    "@ecommerce/logger": "*",
+    "@ecommerce/shared": "*",
+    "@fastify/awilix": "^7.0.0",
+    "@fastify/helmet": "^12.0.0",
+    "@sinclair/typebox": "^0.34.0",
+    "awilix": "^12.0.0",
+    "fastify": "^5.0.0",
+    "ioredis": "^5.0.0"
+  }
+}

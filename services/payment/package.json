@@ -1,0 +1,19 @@
+{
+  "name": "@ecommerce/payment-service",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --import ./src/instrumentation.ts src/app.ts",
+    "start": "node --import ./src/instrumentation.ts src/app.ts",
+    "test": "node --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@ecommerce/event-bus": "*",
+    "@ecommerce/observability": "*",
+    "@ecommerce/logger": "*",
+    "@ecommerce/shared": "*",
+    "ioredis": "^5.4.0",
+    "pino": "^9.0.0",
+    "pino-pretty": "^13.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "@ecommerce/api-client",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

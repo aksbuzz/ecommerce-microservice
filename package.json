@@ -1,0 +1,31 @@
+{
+	"name": "ecommerce",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"packages/*",
+		"services/*",
+		"apps/*",
+		"tests/e2e"
+	],
+	"engines": {
+		"node": ">=24.0.0"
+	},
+	"scripts": {
+		"dev:catalog": "npm run dev -w services/catalog",
+		"dev:identity": "npm run dev -w services/identity",
+		"dev:basket": "npm run dev -w services/basket",
+		"dev:ordering": "npm run dev -w services/ordering",
+		"dev:payment": "npm run dev -w services/payment",
+		"dev:webhooks": "npm run dev -w services/webhooks",
+		"dev:gateway": "npm run dev -w services/gateway",
+		"dev:admin": "npm run dev -w apps/admin",
+		"dev:client": "npm run dev -w apps/client",
+		"build:admin": "npm run build -w apps/admin",
+		"build:client": "npm run build -w apps/client",
+		"test": "npm test --workspaces --if-present",
+		"test:e2e": "npm test -w tests/e2e",
+		"db:up": "npm run db:up --workspaces --if-present",
+		"db:down": "npm run db:down --workspaces --if-present"
+	}
+}

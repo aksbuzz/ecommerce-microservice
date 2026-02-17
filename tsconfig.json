@@ -1,0 +1,24 @@
+{
+	"compilerOptions": {
+		"target": "ES2024",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"strict": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"paths": {
+			"@ecommerce/shared": ["./packages/shared/src/index.ts"],
+			"@ecommerce/db": ["./packages/db/src/index.ts"],
+			"@ecommerce/logger": ["./packages/logger/src/index.ts"],
+			"@ecommerce/event-bus": ["./packages/event-bus/src/index.ts"],
+			"@ecommerce/auth": ["./packages/auth/src/index.ts"],
+			"@ecommerce/observability": ["./packages/observability/src/index.ts"],
+			"@ecommerce/outbox": ["./packages/outbox/src/index.ts"]
+		}
+	},
+	"include": ["packages/*/src/**/*.ts", "services/*/src/**/*.ts"]
+}

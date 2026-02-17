@@ -1,0 +1,16 @@
+{
+  "name": "@ecommerce/auth",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.0",
+    "@fastify/session": "^11.0.0",
+    "connect-redis": "^8.0.0",
+    "fastify-plugin": "^5.0.0",
+    "ioredis": "^5.0.0"
+  },
+  "peerDependencies": {
+    "fastify": "^5.0.0"
+  }
+}

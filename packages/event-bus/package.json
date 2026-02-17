@@ -1,0 +1,21 @@
+{
+  "name": "@ecommerce/event-bus",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "amqplib": "^0.10.0",
+    "fastify-plugin": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.0"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": {
+      "optional": true
+    }
+  }
+}
