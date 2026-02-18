@@ -2,5 +2,8 @@
   "name": "@ecommerce/shared",
   "version": "1.0.0",
   "type": "module",
-  "exports": "./src/index.ts"
+  "exports": "./src/index.ts",
+  "dependencies": {
+    "fastify-plugin": "^5.0.0"
+  }
 }

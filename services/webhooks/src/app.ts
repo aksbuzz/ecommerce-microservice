@@ -1,11 +1,12 @@
 import { sessionPlugin } from '@ecommerce/auth'
+import type { Logger } from '@ecommerce/logger'
+import { errorHandler } from '@ecommerce/shared'
 import { healthCheck, observability } from '@ecommerce/observability'
 import { fastifyAwilixPlugin } from '@fastify/awilix'
 import helmet from '@fastify/helmet'
 import Fastify from 'fastify'
 import { loadConfig } from './config.ts'
 import { registerDependencies } from './container.ts'
-import { errorHandler } from './plugins/error-handler.ts'
 import { webhookRoutes } from './routes/webhooks.routes.ts'
 
 const config = loadConfig()
@@ -27,7 +28,7 @@ await app.register(fastifyAwilixPlugin, {
   strictBooleanEnforced: true,
 })
 
-registerDependencies(config, app.log)
+registerDependencies(config, app.log as unknown as Logger)
 
 await app.register(sessionPlugin, {
   redisUrl: config.redisUrl,
@@ -44,10 +45,8 @@ await app.register(healthCheck, {
 
 await app.register(errorHandler)
 
-// API routes
 await app.register(webhookRoutes, { prefix: '/api/v1/webhooks' })
 
-// Connect event bus and subscribe to all events for webhook dispatch
 try {
   const { eventBus, webhookService } = app.diContainer.cradle
   await eventBus.connectWithRetry()

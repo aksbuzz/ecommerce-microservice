@@ -5,13 +5,7 @@ export interface IntegrationEvent {
   type: string
   timestamp: string
   payload: Record<string, unknown>
-  metadata?: {
-    traceId?: string
-    spanId?: string
-    correlationId?: string
-    causationId?: string
-    [key: string]: unknown
-  }
+  metadata?: Record<string, unknown>
 }
 
 export type EventHandler = (event: IntegrationEvent) => Promise<void>
@@ -48,14 +42,10 @@ export class EventBus {
     this.channel = await conn.createConfirmChannel()
     await this.channel.prefetch(this.prefetchCount)
 
-    // Primary exchange (existing)
     await this.channel.assertExchange(this.exchange, 'topic', { durable: true })
-    // Retry exchange — messages wait in retry queues with TTL before being re-delivered
     await this.channel.assertExchange(`${this.exchange}.retry`, 'topic', { durable: true })
-    // Dead-letter exchange — messages that exceeded max retries
     await this.channel.assertExchange(`${this.exchange}.dlq`, 'topic', { durable: true })
 
-    // Reconnection on unexpected close
     conn.on('close', () => {
       if (!this.closed) {
         this.connection = null
@@ -68,23 +58,17 @@ export class EventBus {
   async publish(event: IntegrationEvent): Promise<void> {
     if (!this.channel) throw new Error('EventBus not connected')
 
-    // Auto-inject trace context from active OTel span (if available)
+    const message = Buffer.from(JSON.stringify(event))
+
+    let headers: Record<string, unknown> = {}
+
     try {
-      const { trace } = await import('@opentelemetry/api')
-      const activeSpan = trace.getActiveSpan()
-      if (activeSpan) {
-        const spanCtx = activeSpan.spanContext()
-        event.metadata = {
-          ...event.metadata,
-          traceId: spanCtx.traceId,
-          spanId: spanCtx.spanId,
-        }
-      }
+      const { propagation, context } = await import('@opentelemetry/api')
+      propagation.inject(context.active(), headers)
     } catch {
       // @opentelemetry/api not available — skip tracing
     }
 
-    const message = Buffer.from(JSON.stringify(event))
     return new Promise((resolve, reject) => {
       this.channel!.publish(
         this.exchange,
@@ -95,7 +79,7 @@ export class EventBus {
           contentType: 'application/json',
           messageId: event.id,
           timestamp: Date.now(),
-          headers: event.metadata ?? {},
+          headers,
         },
         (err) => {
           if (err) reject(err)
@@ -108,7 +92,10 @@ export class EventBus {
   async subscribe(eventType: string, handler: EventHandler, queue: string): Promise<void> {
     if (!this.channel) throw new Error('EventBus not connected')
 
-    // Main queue — dead-letters to retry exchange on nack
+    const handlers = this.handlers.get(eventType) ?? []
+    handlers.push(handler)
+    this.handlers.set(eventType, handlers)
+
     await this.channel.assertQueue(queue, {
       durable: true,
       arguments: {
@@ -118,7 +105,6 @@ export class EventBus {
     })
     await this.channel.bindQueue(queue, this.exchange, eventType)
 
-    // Retry queue — TTL causes messages to expire and route back to main exchange
     const retryQueue = `${queue}.retry`
     await this.channel.assertQueue(retryQueue, {
       durable: true,
@@ -130,24 +116,17 @@ export class EventBus {
     })
     await this.channel.bindQueue(retryQueue, `${this.exchange}.retry`, eventType)
 
-    // DLQ — permanent storage for failed messages
     const dlqQueue = `${queue}.dlq`
     await this.channel.assertQueue(dlqQueue, { durable: true })
     await this.channel.bindQueue(dlqQueue, `${this.exchange}.dlq`, eventType)
 
-    // Register handler
-    const handlers = this.handlers.get(eventType) ?? []
-    handlers.push(handler)
-    this.handlers.set(eventType, handlers)
-
-    await this.channel.consume(queue, async (msg) => {
+    await this.channel.consume(queue, async msg => {
       if (!msg) return
 
       let event: IntegrationEvent
       try {
         event = JSON.parse(msg.content.toString())
       } catch {
-        // Unparseable message — send to DLQ immediately
         this.channel!.publish(`${this.exchange}.dlq`, eventType, msg.content, {
           ...msg.properties,
           headers: { ...msg.properties.headers, 'x-final-error': 'Failed to parse message JSON' },
@@ -156,70 +135,65 @@ export class EventBus {
         return
       }
 
-      // Create a consumer span linked to the producer trace (if OTel available)
-      let span: any = null
-      let otelContext: any = null
-      try {
-        const { trace, SpanKind, SpanStatusCode, context } = await import('@opentelemetry/api')
-        otelContext = { trace, SpanKind, SpanStatusCode, context }
-        const tracer = trace.getTracer('@ecommerce/event-bus')
-        const parentTraceId = event.metadata?.traceId as string | undefined
-        const parentSpanId = event.metadata?.spanId as string | undefined
+      let span: any
+      let otel: any
 
-        span = tracer.startSpan(`process ${event.type}`, {
-          kind: SpanKind.CONSUMER,
-          attributes: {
-            'messaging.system': 'rabbitmq',
-            'messaging.operation': 'process',
-            'messaging.destination': event.type,
-            'event.id': event.id,
-          },
-          links: parentTraceId && parentSpanId
-            ? [{ context: { traceId: parentTraceId, spanId: parentSpanId, traceFlags: 1, isRemote: true } }]
-            : [],
+      try {
+        const { trace, SpanKind, SpanStatusCode, context, propagation } =
+          await import('@opentelemetry/api')
+
+        otel = { trace, SpanStatusCode, context }
+
+        const extractedContext = propagation.extract(context.active(), msg.properties.headers)
+        await context.with(extractedContext, async () => {
+          const tracer = trace.getTracer('@ecommerce/event-bus')
+
+          span = tracer.startSpan(`process ${event.type}`, {
+            kind: SpanKind.CONSUMER,
+            attributes: {
+              'messaging.system': 'rabbitmq',
+              'messaging.operation': 'process',
+              'messaging.destination': msg.fields.routingKey,
+              'messaging.destination_kind': 'queue',
+              'messaging.rabbitmq.routing_key': msg.fields.routingKey,
+              'event.id': event.id,
+            },
+          })
+
+          await context.with(trace.setSpan(context.active(), span), async () => {
+            const eventHandlers = this.handlers.get(event.type) ?? []
+            for (const h of eventHandlers) {
+              await h(event)
+            }
+          })
+
+          span.setStatus({ code: SpanStatusCode.OK })
         })
-      } catch {
-        // OTel not available
-      }
-
-      const runHandlers = async () => {
-        const eventHandlers = this.handlers.get(event.type) ?? []
-        for (const h of eventHandlers) {
-          await h(event)
-        }
-      }
-
-      try {
-        if (span && otelContext) {
-          await otelContext.context.with(
-            otelContext.trace.setSpan(otelContext.context.active(), span),
-            runHandlers,
-          )
-          span.setStatus({ code: otelContext.SpanStatusCode.OK })
-        } else {
-          await runHandlers()
-        }
-        this.channel!.ack(msg)
       } catch (err) {
-        if (span && otelContext) {
-          span.setStatus({ code: otelContext.SpanStatusCode.ERROR, message: String(err) })
+        if (span && otel) {
+          span.recordException(err)
+          span.setStatus({ code: otel.SpanStatusCode.ERROR, message: String(err) })
+          span.end()
         }
 
         const retryCount = this.getRetryCount(msg)
         if (retryCount >= this.maxRetries) {
-          // Max retries exceeded — route to DLQ
           this.channel!.publish(`${this.exchange}.dlq`, eventType, msg.content, {
-            ...msg.properties,
-            headers: { ...msg.properties.headers, 'x-final-error': String(err), 'x-retry-count': retryCount },
+            headers: {
+              ...msg.properties.headers,
+              'x-final-error': String(err),
+              'x-retry-count': retryCount,
+            },
           })
           this.channel!.ack(msg)
         } else {
-          // nack without requeue — RabbitMQ routes to retry exchange via DLX
           this.channel!.nack(msg, false, false)
         }
-      } finally {
-        if (span) span.end()
+        return
       }
+
+      this.channel?.ack(msg)
+      span?.end()
     })
   }
 
@@ -248,8 +222,13 @@ export class EventBus {
 
   async close(): Promise<void> {
     this.closed = true
-    await this.channel?.close()
+    if (this.channel) {
+      await this.channel.waitForConfirms()
+      await this.channel?.close()
+    }
+
     await this.connection?.close()
+
     this.channel = null
     this.connection = null
   }

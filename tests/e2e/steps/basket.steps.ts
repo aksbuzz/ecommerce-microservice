@@ -104,7 +104,11 @@ When('I remove item {int} from basket', async function (this: World, productId: 
 When('I checkout my basket', async function (this: World) {
   this.response = await fetch(`${BASKET_URL}/api/v1/basket/checkout`, {
     method: 'POST',
-    headers: this.sessionCookie ? { cookie: this.sessionCookie } : {},
+    headers: {
+      'Content-Type': 'application/json',
+      ...(this.sessionCookie ? { cookie: this.sessionCookie } : {}),
+    },
+    body: JSON.stringify({}),
   })
   this.responseBody = await this.response.json().catch(() => null)
 })

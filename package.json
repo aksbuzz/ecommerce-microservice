@@ -26,6 +26,7 @@
 		"test": "npm test --workspaces --if-present",
 		"test:e2e": "npm test -w tests/e2e",
 		"db:up": "npm run db:up --workspaces --if-present",
-		"db:down": "npm run db:down --workspaces --if-present"
+		"db:down": "npm run db:down --workspaces --if-present",
+		"seed:admin": "node --experimental-strip-types scripts/seed-admin.ts"
 	}
 }

@@ -1,5 +1,5 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import {
   CatalogItemSchema,
@@ -10,7 +10,7 @@ import {
 } from '../schemas/catalog-item.schema.ts'
 
 export async function itemRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/items', {
+  app.get<{ Querystring: Static<typeof CatalogItemsQuerySchema> }>('/items', {
     schema: {
       querystring: CatalogItemsQuerySchema,
       response: {
@@ -29,7 +29,7 @@ export async function itemRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.get('/items/:id', {
+  app.get<{ Params: Static<typeof ItemByIdParamsSchema> }>('/items/:id', {
     schema: {
       params: ItemByIdParamsSchema,
       response: { 200: CatalogItemSchema },
@@ -40,7 +40,7 @@ export async function itemRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/items', {
+  app.post<{ Body: Static<typeof CreateCatalogItemSchema> }>('/items', {
     preHandler: authGuard,
     schema: {
       body: CreateCatalogItemSchema,
@@ -53,7 +53,7 @@ export async function itemRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.patch('/items/:id', {
+  app.patch<{ Params: Static<typeof ItemByIdParamsSchema>; Body: Static<typeof UpdateCatalogItemSchema> }>('/items/:id', {
     preHandler: authGuard,
     schema: {
       params: ItemByIdParamsSchema,
@@ -66,7 +66,7 @@ export async function itemRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.delete('/items/:id', {
+  app.delete<{ Params: Static<typeof ItemByIdParamsSchema> }>('/items/:id', {
     preHandler: authGuard,
     schema: {
       params: ItemByIdParamsSchema,

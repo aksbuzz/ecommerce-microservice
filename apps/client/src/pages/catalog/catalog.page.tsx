@@ -1,5 +1,5 @@
 import type { CatalogItem } from '@ecommerce/api-client'
-import { Search } from 'lucide-react'
+import { Search, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -67,55 +67,60 @@ export function CatalogPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Our Products</h1>
-        <p className="text-muted-foreground mt-1">Browse our full catalog</p>
+    <div className="space-y-8">
+      <div className="rounded-2xl bg-linear-to-r from-primary/5 via-primary/10 to-transparent p-8">
+        <h1 className="text-3xl font-bold tracking-tight">Our Products</h1>
+        <p className="mt-2 text-muted-foreground max-w-lg">
+          Discover our carefully curated catalog. Find exactly what you're looking for.
+        </p>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-50">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search products..."
-            className="pl-8"
+            className="pl-9 rounded-lg"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
-        <Select
-          onValueChange={handleBrandChange}
-          value={brandId ? String(brandId) : 'all'}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Brands" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Brands</SelectItem>
-            {brands?.map((b) => <SelectItem key={b.id} value={String(b.id)}>{b.brand}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={handleTypeChange}
-          value={typeId ? String(typeId) : 'all'}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {types?.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.type}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+          <Select
+            onValueChange={handleBrandChange}
+            value={brandId ? String(brandId) : 'all'}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Brands" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {brands?.map((b) => <SelectItem key={b.id} value={String(b.id)}>{b.brand}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select
+            onValueChange={handleTypeChange}
+            value={typeId ? String(typeId) : 'all'}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {types?.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.type}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><LoadingSpinner size="lg" /></div>
+        <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
       ) : !data?.items.length ? (
         <EmptyState title="No products found" description="Try adjusting your search or filters." />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
             {data.items.map((item) => {
               const brand = brands?.find((b) => b.id === item.catalogBrandId)
               return (

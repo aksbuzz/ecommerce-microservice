@@ -14,5 +14,10 @@ export function createDb(options: DbOptions): postgres.Sql {
 }
 
 export type Sql = postgres.Sql
+export type TransactionSql = postgres.TransactionSql
 
 export { postgres }
+
+export function withTransaction<T>(sql: Sql, cb: (tx: Sql) => T | Promise<T>) {
+  return sql.begin(cb as unknown as (tx: TransactionSql) => T | Promise<T>);
+}

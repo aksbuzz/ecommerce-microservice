@@ -1,5 +1,5 @@
 import type { EventBus, IntegrationEvent } from '@ecommerce/event-bus'
-import type { Logger } from 'pino'
+import type { Logger } from '@ecommerce/logger'
 
 interface PaymentRequest {
   orderId: number
@@ -43,9 +43,7 @@ export class PaymentService {
   }
 
   async simulatePaymentGateway(_payment: PaymentRequest): Promise<boolean> {
-    // Simulate latency
     await new Promise((resolve) => setTimeout(resolve, 100))
-    // Succeed 95% of the time in dev
     return Math.random() > 0.05
   }
 }

@@ -1,13 +1,6 @@
 import type { Redis } from 'ioredis'
 import type { EventHandler, IntegrationEvent } from './event-bus.ts'
 
-/**
- * Wraps an EventHandler to ensure idempotency via Redis SET NX.
- * Useful for services without a PostgreSQL database (e.g., payment worker).
- *
- * Uses SET key EX ttl NX: only processes the event if the key doesn't already exist.
- * On handler failure, deletes the key so retries can re-process.
- */
 export function idempotentHandlerRedis(
   redis: Redis,
   handler: EventHandler,

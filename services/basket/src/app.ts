@@ -1,5 +1,7 @@
 import { sessionPlugin } from '@ecommerce/auth'
+import type { Logger } from '@ecommerce/logger'
 import { idempotentHandlerRedis } from '@ecommerce/event-bus'
+import { errorHandler } from '@ecommerce/shared'
 import { healthCheck, observability } from '@ecommerce/observability'
 import { fastifyAwilixPlugin } from '@fastify/awilix'
 import helmet from '@fastify/helmet'
@@ -7,7 +9,6 @@ import Fastify from 'fastify'
 import { loadConfig } from './config.ts'
 import { registerDependencies } from './container.ts'
 import { createUserDeletedHandler } from './event-handlers/user-deleted.handler.ts'
-import { errorHandler } from './plugins/error-handler.ts'
 import { basketRoutes } from './routes/basket.routes.ts'
 
 const config = loadConfig()
@@ -46,10 +47,8 @@ await app.register(healthCheck, {
 
 await app.register(errorHandler)
 
-// API routes
 await app.register(basketRoutes, { prefix: '/api/v1/basket' })
 
-// Connect event bus and subscribe to events
 try {
   const { eventBus, redis, basketRepository } = app.diContainer.cradle
   await eventBus.connectWithRetry()
@@ -58,7 +57,7 @@ try {
   // Clean up basket when a user account is deleted
   const userDeletedHandler = idempotentHandlerRedis(
     redis,
-    createUserDeletedHandler({ basketRepository, log: app.log }),
+    createUserDeletedHandler({ basketRepository, log: app.log as unknown as Logger }),
   )
   await eventBus.subscribe('identity.user.deleted', userDeletedHandler, 'basket.identity_user_deleted')
 

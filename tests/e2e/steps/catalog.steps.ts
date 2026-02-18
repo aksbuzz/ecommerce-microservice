@@ -111,5 +111,3 @@ When('I request DELETE {string}', async function (this: World, path: string) {
     this.responseBody = await this.response.json()
   }
 })
-
-// Common assertions (status, contains, equals) are in common.steps.ts

@@ -1,6 +1,6 @@
 import type { IntegrationEvent } from '@ecommerce/event-bus'
 import { CircuitBreaker, CircuitOpenError, NotFoundError } from '@ecommerce/shared'
-import type { Logger } from 'pino'
+import type { Logger } from '@ecommerce/logger'
 import type { WebhookRepository } from '../repositories/webhook.repository.ts'
 import type { CreateWebhookInput } from '../schemas/webhook.schema.ts'
 

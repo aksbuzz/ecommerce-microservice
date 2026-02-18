@@ -1,5 +1,5 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import {
   AddItemSchema,
@@ -10,7 +10,6 @@ import {
 } from '../schemas/basket.schema.ts'
 
 export async function basketRoutes(app: FastifyInstance): Promise<void> {
-  // All basket routes require authentication
   app.addHook('preHandler', authGuard)
 
   app.get('/', {
@@ -24,7 +23,7 @@ export async function basketRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.put('/', {
+  app.put<{ Body: Static<typeof UpdateBasketSchema> }>('/', {
     schema: {
       body: UpdateBasketSchema,
       response: { 200: CustomerBasketSchema },
@@ -36,7 +35,7 @@ export async function basketRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/items', {
+  app.post<{ Body: Static<typeof AddItemSchema> }>('/items', {
     schema: {
       body: AddItemSchema,
       response: { 200: CustomerBasketSchema },
@@ -48,7 +47,7 @@ export async function basketRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.patch('/items/:productId', {
+  app.patch<{ Params: { productId: number }; Body: Static<typeof UpdateQuantitySchema> }>('/items/:productId', {
     schema: {
       params: Type.Object({ productId: Type.Integer() }),
       body: UpdateQuantitySchema,
@@ -61,7 +60,7 @@ export async function basketRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.delete('/items/:productId', {
+  app.delete<{ Params: { productId: number } }>('/items/:productId', {
     schema: {
       params: Type.Object({ productId: Type.Integer() }),
       response: { 200: CustomerBasketSchema },
@@ -85,7 +84,7 @@ export async function basketRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/checkout', {
+  app.post<{ Body: Static<typeof CheckoutSchema> }>('/checkout', {
     schema: {
       body: CheckoutSchema,
       response: {

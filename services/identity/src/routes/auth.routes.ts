@@ -1,9 +1,9 @@
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import { LoginSchema, RegisterSchema, UserSchema } from '../schemas/user.schema.ts'
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
-  app.post('/register', {
+  app.post<{ Body: Static<typeof RegisterSchema> }>('/register', {
     schema: {
       body: RegisterSchema,
       response: { 201: UserSchema },
@@ -17,7 +17,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/login', {
+  app.post<{ Body: Static<typeof LoginSchema> }>('/login', {
     schema: {
       body: LoginSchema,
       response: {

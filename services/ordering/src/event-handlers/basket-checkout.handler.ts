@@ -1,5 +1,5 @@
 import type { IntegrationEvent } from '@ecommerce/event-bus'
-import type { Logger } from 'pino'
+import type { Logger } from '@ecommerce/logger'
 import type { OrderingService } from '../services/ordering.service.ts'
 
 interface BasketCheckoutPayload {

@@ -1,11 +1,11 @@
 import { sessionPlugin } from '@ecommerce/auth'
 import { healthCheck, observability } from '@ecommerce/observability'
+import { errorHandler } from '@ecommerce/shared'
 import { fastifyAwilixPlugin } from '@fastify/awilix'
 import helmet from '@fastify/helmet'
 import Fastify from 'fastify'
 import { loadConfig } from './config.ts'
 import { registerDependencies } from './container.ts'
-import { errorHandler } from './plugins/error-handler.ts'
 import { authRoutes } from './routes/auth.routes.ts'
 import { profileRoutes } from './routes/profile.routes.ts'
 
@@ -45,11 +45,9 @@ await app.register(healthCheck, {
 
 await app.register(errorHandler)
 
-// API routes
 await app.register(authRoutes, { prefix: '/api/v1/identity' })
 await app.register(profileRoutes, { prefix: '/api/v1/identity' })
 
-// Connect event bus and start outbox processor
 try {
   const { eventBus, outboxProcessor } = app.diContainer.cradle
   await eventBus.connectWithRetry()

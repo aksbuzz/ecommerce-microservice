@@ -50,3 +50,14 @@ Feature: Identity Service
     Given I am logged in as "e2e-logout@test.com"
     When I logout with session
     Then the response status should be 200
+
+  Scenario: Delete account
+    Given I am logged in as "e2e-delete@test.com"
+    When I delete my account with session
+    Then the response status should be 204
+
+  Scenario: Deleted account cannot login
+    Given I am logged in as "e2e-delete-login@test.com"
+    When I delete my account with session
+    And I login with email "e2e-delete-login@test.com" and password "securepass123"
+    Then the response status should be 401

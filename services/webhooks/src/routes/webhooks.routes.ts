@@ -1,5 +1,5 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import { CreateWebhookSchema, WebhookByIdParamsSchema, WebhookSubscriptionSchema } from '../schemas/webhook.schema.ts'
 
@@ -16,7 +16,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/', {
+  app.post<{ Body: Static<typeof CreateWebhookSchema> }>('/', {
     schema: {
       body: CreateWebhookSchema,
       response: { 201: WebhookSubscriptionSchema },
@@ -28,7 +28,7 @@ export async function webhookRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.delete('/:id', {
+  app.delete<{ Params: Static<typeof WebhookByIdParamsSchema> }>('/:id', {
     schema: {
       params: WebhookByIdParamsSchema,
       response: { 204: Type.Null() },

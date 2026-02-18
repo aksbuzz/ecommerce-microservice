@@ -31,7 +31,6 @@ export class CatalogService {
     this.sql = sql
   }
 
-  // Items
   async getItems(query: CatalogItemsQuery) {
     return this.catalogItemRepository.findAll({
       page: query.page ?? 1,
@@ -89,7 +88,6 @@ export class CatalogService {
     })
   }
 
-  // Brands
   async getBrands() {
     return this.catalogBrandRepository.findAll()
   }
@@ -103,7 +101,6 @@ export class CatalogService {
     if (!deleted) throw new NotFoundError('CatalogBrand', id)
   }
 
-  // Types
   async getTypes() {
     return this.catalogTypeRepository.findAll()
   }

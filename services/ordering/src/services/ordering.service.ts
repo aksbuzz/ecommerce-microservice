@@ -1,4 +1,4 @@
-import type { Sql } from '@ecommerce/db'
+import { withTransaction, type Sql } from '@ecommerce/db'
 import type { EventBus } from '@ecommerce/event-bus'
 import type { OutboxStore } from '@ecommerce/outbox'
 import { NotFoundError, ValidationError } from '@ecommerce/shared'
@@ -45,7 +45,7 @@ export class OrderingService {
   }
 
   async createOrder(buyerId: number, data: CreateOrderInput) {
-    return this.sql.begin(async (tx) => {
+    return withTransaction(this.sql, async (tx) => {
       const order = await this.orderRepository.createWithTx(tx, buyerId, data)
 
       await this.outboxStore.save(tx, {
@@ -68,7 +68,7 @@ export class OrderingService {
       throw new ValidationError(`Cannot transition from '${order.status}' to '${newStatus}'`)
     }
 
-    return this.sql.begin(async (tx) => {
+    return withTransaction(this.sql, async (tx) => {
       const updated = await this.orderRepository.updateStatusWithTx(tx, id, newStatus)
 
       const eventPayload: Record<string, unknown> = {
@@ -78,7 +78,6 @@ export class OrderingService {
         newStatus,
       }
 
-      // Enrich payload for states downstream services need
       if (newStatus === 'confirmed' || newStatus === 'paid') {
         eventPayload.total = order.total
       }

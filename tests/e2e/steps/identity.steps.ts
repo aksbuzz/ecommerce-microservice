@@ -112,4 +112,10 @@ When('I logout with session', async function (this: World) {
   this.responseBody = await this.response.json()
 })
 
-// Common assertions (status, contains, equals) are in common.steps.ts
+When('I delete my account with session', async function (this: World) {
+  this.response = await fetch(`${BASE_URL}/api/v1/identity/profile`, {
+    method: 'DELETE',
+    headers: this.sessionCookie ? { cookie: this.sessionCookie } : {},
+  })
+  this.responseBody = null
+})

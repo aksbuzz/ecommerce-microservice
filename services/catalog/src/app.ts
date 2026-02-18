@@ -1,6 +1,8 @@
 import { sessionPlugin } from '@ecommerce/auth'
 import { idempotentHandler } from '@ecommerce/event-bus'
 import { healthCheck, observability } from '@ecommerce/observability'
+import type { Logger } from '@ecommerce/logger'
+import { errorHandler } from '@ecommerce/shared'
 import { fastifyAwilixPlugin } from '@fastify/awilix'
 import helmet from '@fastify/helmet'
 import Fastify from 'fastify'
@@ -8,7 +10,6 @@ import { loadConfig } from './config.ts'
 import { registerDependencies } from './container.ts'
 import { createStockDecrementHandler } from './event-handlers/stock-decrement.handler.ts'
 import { createStockValidationHandler } from './event-handlers/stock-validation.handler.ts'
-import { errorHandler } from './plugins/error-handler.ts'
 import { brandRoutes } from './routes/brands.routes.ts'
 import { itemRoutes } from './routes/items.routes.ts'
 import { typeRoutes } from './routes/types.routes.ts'
@@ -49,19 +50,17 @@ await app.register(healthCheck, {
 
 await app.register(errorHandler)
 
-// API routes
 await app.register(itemRoutes, { prefix: '/api/v1/catalog' })
 await app.register(brandRoutes, { prefix: '/api/v1/catalog' })
 await app.register(typeRoutes, { prefix: '/api/v1/catalog' })
 
-// Connect event bus, start outbox processor, subscribe to saga events
 try {
   const { eventBus, outboxProcessor, outboxStore, sql } = app.diContainer.cradle
   await eventBus.connectWithRetry()
   outboxProcessor.start()
   app.log.info('Connected to RabbitMQ')
 
-  const handlerDeps = { outboxStore, sql, log: app.log }
+  const handlerDeps = { outboxStore, sql, log: app.log as unknown as Logger }
 
   // Stock validation: check availability when order is awaiting validation
   const stockValidationHandler = idempotentHandler(
@@ -73,7 +72,7 @@ try {
   // Stock decrement: reduce stock after payment succeeds
   const stockDecrementHandler = idempotentHandler(
     sql,
-    createStockDecrementHandler({ sql, log: app.log }),
+    createStockDecrementHandler({ sql, log: handlerDeps.log }),
   )
   await eventBus.subscribe('order.paid', stockDecrementHandler, 'catalog.order_paid')
 

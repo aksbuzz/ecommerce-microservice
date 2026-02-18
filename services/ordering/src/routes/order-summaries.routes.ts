@@ -5,7 +5,6 @@ import type { FastifyInstance } from 'fastify'
 export async function orderSummaryRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authGuard)
 
-  // CQRS read endpoint — queries the denormalized order_summaries table
   app.get('/summaries', {
     schema: {
       querystring: Type.Object({

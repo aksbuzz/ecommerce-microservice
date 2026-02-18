@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { beforeEach, describe, it, mock } from 'node:test'
+import { describe, it, mock } from 'node:test'
 import { OutboxStore } from './outbox-store.ts'
 
 describe('OutboxStore', () => {

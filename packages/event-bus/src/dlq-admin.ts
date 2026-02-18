@@ -47,10 +47,7 @@ const dlqAdminPlugin: FastifyPluginAsync<DlqAdminOptions> = async (app: FastifyI
       delete headers['x-retry-count']
 
       const event = JSON.parse(msg.content.toString())
-      channel.publish(eventBus.exchange, event.type, msg.content, {
-        ...msg.properties,
-        headers,
-      })
+      await eventBus.publish(event)
       channel.ack(msg)
       replayed++
     }

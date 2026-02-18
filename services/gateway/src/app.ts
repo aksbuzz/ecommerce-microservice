@@ -103,7 +103,6 @@ await app.register(healthCheck, {
   ],
 })
 
-// Ensure every request has an X-Request-Id
 app.addHook('onRequest', async (request, reply) => {
   const existing = request.headers['x-request-id'] as string | undefined
   const requestId = existing ?? crypto.randomUUID()
@@ -111,7 +110,6 @@ app.addHook('onRequest', async (request, reply) => {
   reply.header('x-request-id', requestId)
 })
 
-// Helper to build common upstream headers from the incoming request
 function buildUpstreamHeaders(request: { headers: Record<string, string | string[] | undefined> }) {
   return {
     'x-request-id': request.headers['x-request-id'] as string,
@@ -124,7 +122,7 @@ function buildUpstreamHeaders(request: { headers: Record<string, string | string
   }
 }
 
-// Proxy: /api/v1/catalog → catalog service (keep same path)
+// Proxy: /api/v1/catalog → catalog service
 await app.register(httpProxy, {
   upstream: config.services.catalog,
   prefix: '/api/v1/catalog',
@@ -138,7 +136,7 @@ await app.register(httpProxy, {
   },
 })
 
-// Proxy: /api/v1/identity → identity service (keep same path)
+// Proxy: /api/v1/identity → identity service
 await app.register(httpProxy, {
   upstream: config.services.identity,
   prefix: '/api/v1/identity',
@@ -152,7 +150,7 @@ await app.register(httpProxy, {
   },
 })
 
-// Proxy: /api/v1/basket → basket service (keep same path)
+// Proxy: /api/v1/basket → basket service
 await app.register(httpProxy, {
   upstream: config.services.basket,
   prefix: '/api/v1/basket',
@@ -166,7 +164,7 @@ await app.register(httpProxy, {
   },
 })
 
-// Proxy: /api/v1/orders → ordering service (keep same path)
+// Proxy: /api/v1/orders → ordering service
 await app.register(httpProxy, {
   upstream: config.services.ordering,
   prefix: '/api/v1/orders',
@@ -180,7 +178,7 @@ await app.register(httpProxy, {
   },
 })
 
-// Proxy: /api/v1/webhooks → webhooks service (keep same path)
+// Proxy: /api/v1/webhooks → webhooks service
 await app.register(httpProxy, {
   upstream: config.services.webhooks,
   prefix: '/api/v1/webhooks',

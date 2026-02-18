@@ -1,6 +1,8 @@
 import { sessionPlugin } from '@ecommerce/auth'
 import { dlqAdmin, idempotentHandler } from '@ecommerce/event-bus'
+import type { Logger } from '@ecommerce/logger'
 import { healthCheck, observability } from '@ecommerce/observability'
+import { errorHandler } from '@ecommerce/shared'
 import { fastifyAwilixPlugin } from '@fastify/awilix'
 import helmet from '@fastify/helmet'
 import Fastify from 'fastify'
@@ -11,7 +13,6 @@ import { createOrderSubmittedHandler } from './event-handlers/order-submitted.ha
 import { createOrderSummaryProjector } from './event-handlers/order-summary-projector.ts'
 import { createPaymentFailedHandler, createPaymentSucceededHandler } from './event-handlers/payment-result.handler.ts'
 import { createStockConfirmedHandler, createStockRejectedHandler } from './event-handlers/stock-result.handler.ts'
-import { errorHandler } from './plugins/error-handler.ts'
 import { orderSummaryRoutes } from './routes/order-summaries.routes.ts'
 import { orderRoutes } from './routes/orders.routes.ts'
 
@@ -51,25 +52,23 @@ await app.register(healthCheck, {
 
 await app.register(errorHandler)
 
-// API routes (write model + CQRS read model)
 await app.register(orderRoutes, { prefix: '/api/v1/orders' })
 await app.register(orderSummaryRoutes, { prefix: '/api/v1/orders' })
 
-// Connect event bus, start outbox processor, subscribe to saga events
 try {
   const { eventBus, outboxProcessor, orderingService, orderRepository, outboxStore, orderSummaryRepository, sql } = app.diContainer.cradle
   await eventBus.connectWithRetry()
   outboxProcessor.start()
   app.log.info('Connected to RabbitMQ')
 
-  const sagaDeps = { orderRepository, outboxStore, sql, log: app.log }
+  const sagaDeps = { orderRepository, outboxStore, sql, log: app.log as unknown as Logger };
 
   // --- Saga event subscriptions (all wrapped with idempotent consumers) ---
 
   // 1. basket.checkout → create order (publishes order.submitted via outbox)
   const checkoutHandler = idempotentHandler(
     sql,
-    createBasketCheckoutHandler({ orderingService, log: app.log }),
+    createBasketCheckoutHandler({ orderingService, log: sagaDeps.log }),
   )
   await eventBus.subscribe('basket.checkout', checkoutHandler, 'ordering.basket_checkout')
 
@@ -111,7 +110,7 @@ try {
   // --- CQRS projector (updates read model) ---
   const projector = idempotentHandler(
     sql,
-    createOrderSummaryProjector({ orderSummaryRepository, orderRepository, log: app.log }),
+    createOrderSummaryProjector({ orderSummaryRepository, orderRepository, log: sagaDeps.log }),
   )
   for (const eventType of ['order.submitted', 'order.confirmed', 'order.paid', 'order.shipped', 'order.cancelled']) {
     await eventBus.subscribe(eventType, projector, `ordering.summary_${eventType.replaceAll('.', '_')}`)

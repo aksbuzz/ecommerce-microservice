@@ -1,12 +1,12 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import { UpdateProfileSchema, UserSchema } from '../schemas/user.schema.ts'
 
 export async function profileRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authGuard)
 
-  app.patch('/profile', {
+  app.patch<{ Body: Static<typeof UpdateProfileSchema> }>('/profile', {
     schema: {
       body: UpdateProfileSchema,
       response: { 200: UserSchema },

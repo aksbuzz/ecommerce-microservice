@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "exports": "./src/index.ts",
+  "scripts": {
+    "test": "node --test src/**/*.test.ts"
+  },
   "dependencies": {
     "amqplib": "^0.10.0",
     "fastify-plugin": "^5.0.0"

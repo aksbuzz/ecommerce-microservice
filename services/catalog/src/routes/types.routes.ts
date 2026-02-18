@@ -1,5 +1,5 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import { ItemByIdParamsSchema } from '../schemas/catalog-item.schema.ts'
 import { CatalogTypeSchema, CreateCatalogTypeSchema } from '../schemas/catalog-type.schema.ts'
@@ -15,7 +15,7 @@ export async function typeRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/types', {
+  app.post<{ Body: Static<typeof CreateCatalogTypeSchema> }>('/types', {
     preHandler: authGuard,
     schema: {
       body: CreateCatalogTypeSchema,
@@ -28,7 +28,7 @@ export async function typeRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.delete('/types/:id', {
+  app.delete<{ Params: Static<typeof ItemByIdParamsSchema> }>('/types/:id', {
     preHandler: authGuard,
     schema: {
       params: ItemByIdParamsSchema,

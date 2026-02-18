@@ -1,7 +1,6 @@
 import type { CatalogItem } from '@ecommerce/api-client'
 import { Package, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/utils'
 
 interface ProductCardProps {
@@ -13,40 +12,43 @@ interface ProductCardProps {
 
 export function ProductCard({ item, brandName, onAddToBasket, isAdding }: ProductCardProps) {
   return (
-    <Card className="flex flex-col overflow-hidden hover:shadow-md transition-shadow">
-      <div className="flex-1 p-4 flex flex-col">
-        <div className="h-32 bg-muted rounded-md flex items-center justify-center mb-3">
-          <Package className="h-16 w-16 text-muted-foreground/40" />
-        </div>
-        <div className="space-y-1 flex-1">
+    <div className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+      <div className="relative aspect-square bg-linear-to-br from-muted to-muted/50 flex items-center justify-center overflow-hidden">
+        <Package className="h-16 w-16 text-muted-foreground/25 transition-transform duration-300 group-hover:scale-110" />
+        {item.availableStock === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+            <span className="rounded-full bg-destructive/10 px-3 py-1 text-xs font-semibold text-destructive">Out of stock</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex-1 space-y-1.5">
           {brandName && (
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{brandName}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary/70">{brandName}</p>
           )}
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2">{item.name}</h3>
+          <h3 className="font-semibold text-sm leading-snug line-clamp-2">{item.name}</h3>
           {item.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{item.description}</p>
+          )}
+        </div>
+        <div className="mt-3 flex items-end justify-between">
+          <span className="text-lg font-bold tracking-tight">{formatCurrency(item.price)}</span>
+          {item.availableStock > 0 && (
+            <span className="text-[11px] text-muted-foreground">{item.availableStock} left</span>
           )}
         </div>
       </div>
-      <CardContent className="p-4 pt-0">
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-lg">{formatCurrency(item.price)}</span>
-          <span className={`text-xs ${item.availableStock === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {item.availableStock === 0 ? 'Out of stock' : `${item.availableStock} left`}
-          </span>
-        </div>
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
+      <div className="px-4 pb-4">
         <Button
-          className="w-full"
+          className="w-full rounded-lg"
           size="sm"
-          onClick={() => onAddToBasket(item)}
+          onClick={(e) => { e.preventDefault(); onAddToBasket(item) }}
           disabled={item.availableStock === 0 || isAdding}
         >
           <ShoppingCart className="h-4 w-4" />
           {item.availableStock === 0 ? 'Out of Stock' : 'Add to Cart'}
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   )
 }

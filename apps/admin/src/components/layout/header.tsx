@@ -15,16 +15,21 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b px-6">
+    <header className="flex h-14 items-center justify-between border-b border-[hsl(var(--border))] px-6">
       <div />
       <div className="flex items-center gap-3">
         {user && (
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            {user.name} {user.lastName}
-          </span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent">
+              <User className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {user.name} {user.lastName}
+            </span>
+          </div>
         )}
-        <Button variant="ghost" size="sm" onClick={handleLogout} disabled={logoutMutation.isPending}>
+        <div className="h-5 w-px bg-border" />
+        <Button variant="ghost" size="sm" onClick={handleLogout} disabled={logoutMutation.isPending} className="text-muted-foreground hover:text-foreground">
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

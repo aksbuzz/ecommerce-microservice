@@ -16,15 +16,6 @@ export class OutboxStore {
     this.sql = sql
   }
 
-  /**
-   * Save an event to the outbox within a transaction.
-   * MUST be called with the same transaction handle as your business write:
-   *
-   *   await sql.begin(async (tx) => {
-   *     await tx`INSERT INTO orders ...`
-   *     await outboxStore.save(tx, event)
-   *   })
-   */
   async save(tx: Sql, event: IntegrationEvent): Promise<void> {
     await tx`
       INSERT INTO outbox_messages (id, event_type, payload)
@@ -32,7 +23,6 @@ export class OutboxStore {
     `
   }
 
-  /** Fetch unpublished outbox messages ordered by creation time (FIFO). */
   async getUnpublished(limit = 50): Promise<OutboxMessage[]> {
     return this.sql<OutboxMessage[]>`
       SELECT id, event_type as "eventType", payload, created_at as "createdAt", published_at as "publishedAt"
@@ -44,7 +34,6 @@ export class OutboxStore {
     `
   }
 
-  /** Mark outbox messages as published after successful EventBus publish. */
   async markPublished(ids: string[]): Promise<void> {
     if (ids.length === 0) return
     await this.sql`

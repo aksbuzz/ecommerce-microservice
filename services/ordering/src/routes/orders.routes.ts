@@ -1,5 +1,5 @@
 import { authGuard } from '@ecommerce/auth'
-import { Type } from '@sinclair/typebox'
+import { type Static, Type } from '@sinclair/typebox'
 import type { FastifyInstance } from 'fastify'
 import {
   CreateOrderSchema,
@@ -12,7 +12,7 @@ import {
 export async function orderRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authGuard)
 
-  app.get('/', {
+  app.get<{ Querystring: Static<typeof OrdersQuerySchema> }>('/', {
     schema: {
       querystring: OrdersQuerySchema,
       response: {
@@ -31,7 +31,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.get('/:id', {
+  app.get<{ Params: Static<typeof OrderByIdParamsSchema> }>('/:id', {
     schema: {
       params: OrderByIdParamsSchema,
       response: { 200: OrderSchema },
@@ -42,7 +42,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/', {
+  app.post<{ Body: Static<typeof CreateOrderSchema> }>('/', {
     schema: {
       body: CreateOrderSchema,
       response: { 201: OrderSchema },
@@ -54,7 +54,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.patch('/:id/status', {
+  app.patch<{ Params: Static<typeof OrderByIdParamsSchema>; Body: { status: Static<typeof OrderStatusEnum> } }>('/:id/status', {
     schema: {
       params: OrderByIdParamsSchema,
       body: Type.Object({ status: OrderStatusEnum }),
@@ -66,7 +66,7 @@ export async function orderRoutes(app: FastifyInstance): Promise<void> {
     },
   })
 
-  app.post('/:id/cancel', {
+  app.post<{ Params: Static<typeof OrderByIdParamsSchema> }>('/:id/cancel', {
     schema: {
       params: OrderByIdParamsSchema,
       response: { 200: OrderSchema },

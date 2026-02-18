@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Lock, MapPin } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
@@ -56,12 +57,15 @@ export function CheckoutPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Checkout</h1>
+      <h1 className="text-2xl font-bold tracking-tight">Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle>Delivery Address</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              Delivery Address
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -106,7 +110,7 @@ export function CheckoutPage() {
                   )} />
                 </div>
                 {form.formState.errors.root && (
-                  <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
+                  <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
                 )}
               </form>
             </Form>
@@ -119,12 +123,12 @@ export function CheckoutPage() {
             <CardContent className="space-y-3">
               {items.map((item) => (
                 <div key={item.productId} className="flex justify-between text-sm">
-                  <span>{item.productName} × {item.quantity}</span>
-                  <span>{formatCurrency(item.unitPrice * item.quantity)}</span>
+                  <span className="text-muted-foreground">{item.productName} x {item.quantity}</span>
+                  <span className="font-medium">{formatCurrency(item.unitPrice * item.quantity)}</span>
                 </div>
               ))}
               <Separator />
-              <div className="flex justify-between font-semibold">
+              <div className="flex justify-between text-lg font-bold">
                 <span>Total</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
@@ -133,11 +137,15 @@ export function CheckoutPage() {
           <Button
             form="checkout-form"
             type="submit"
-            className="w-full"
+            className="w-full rounded-lg"
             size="lg"
             disabled={checkoutMutation.isPending}
           >
-            {checkoutMutation.isPending ? <><LoadingSpinner size="sm" /> Processing...</> : 'Place Order'}
+            {checkoutMutation.isPending ? (
+              <><LoadingSpinner size="sm" /> Processing...</>
+            ) : (
+              <><Lock className="h-4 w-4" /> Place Order</>
+            )}
           </Button>
         </div>
       </div>

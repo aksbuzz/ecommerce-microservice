@@ -1,5 +1,5 @@
 import type { IntegrationEvent } from '@ecommerce/event-bus'
-import type { Logger } from 'pino'
+import type { Logger } from '@ecommerce/logger'
 import type { OrderRepository } from '../repositories/order.repository.ts'
 import type { OrderSummaryRepository } from '../repositories/order-summary.repository.ts'
 
@@ -12,7 +12,6 @@ interface Deps {
 /**
  * CQRS read-model projector.
  * Consumes order lifecycle events and maintains a denormalized order_summaries table.
- * The read model powers the fast GET /api/v1/orders/summaries endpoint.
  */
 export function createOrderSummaryProjector({ orderSummaryRepository, orderRepository, log }: Deps) {
   return async (event: IntegrationEvent): Promise<void> => {
